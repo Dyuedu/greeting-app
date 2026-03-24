@@ -63,7 +63,10 @@ class ContactListViewModel extends ChangeNotifier {
     );
   }
 
-  Future<void> updateRelationshipType(Contact contact, int relationshipType) async {
+  Future<void> updateRelationshipType(
+    Contact contact,
+    int relationshipType,
+  ) async {
     final id = contact.id;
     if (id == null) {
       throw Exception('Liên hệ không hợp lệ');
@@ -86,6 +89,20 @@ class ContactListViewModel extends ChangeNotifier {
     _contacts = List<Contact>.from(_contacts)
       ..removeWhere((c) => c.id == contact.id);
     notifyListeners();
+  }
+
+  Future<void> togglePinned(Contact contact) async {
+    final id = contact.id;
+    if (id == null) {
+      throw Exception('Liên hệ không hợp lệ');
+    }
+
+    await _repository.updatePinnedStatus(
+      contactId: id,
+      isPinned: !contact.isPinned,
+    );
+
+    await refresh();
   }
 
   void _setLoading(bool value) {

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:greeting_app/core/theme/app_spacing.dart';
 import 'custom_filter_chip.dart';
 
 class ContactFilterDrawer extends StatelessWidget {
@@ -19,27 +20,27 @@ class ContactFilterDrawer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+
     return Drawer(
       child: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Padding(
-              padding: EdgeInsets.all(16.0),
-              child: Text(
-                'Bộ lọc danh sách',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-              ),
+            Padding(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              child: Text('Bộ lọc danh sách', style: textTheme.headlineMedium),
             ),
             const Divider(),
             Expanded(
               child: ListView(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
                 children: [
-                  const Text('Trạng thái:', style: TextStyle(fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 8),
+                  Text('Trạng thái:', style: textTheme.titleMedium),
+                  const SizedBox(height: AppSpacing.xs),
                   Wrap(
-                    spacing: 8,
+                    spacing: AppSpacing.xs,
+                    runSpacing: AppSpacing.xs,
                     children: [
                       CustomFilterChip(
                         label: 'Chưa gửi',
@@ -58,25 +59,44 @@ class ContactFilterDrawer extends StatelessWidget {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 24),
-                  const Text('Mối quan hệ:', style: TextStyle(fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: AppSpacing.xl),
+                  Text('Mối quan hệ:', style: textTheme.titleMedium),
+                  const SizedBox(height: AppSpacing.xs),
                   Wrap(
-                    spacing: 8,
+                    spacing: AppSpacing.xs,
+                    runSpacing: AppSpacing.xs,
                     children: [
-                      CustomFilterChip(label: 'Gia đình', selected: currentRelationship == 0, onSelected: (s) => onRelationshipChanged(s ? 0 : null)),
-                      CustomFilterChip(label: 'Sếp', selected: currentRelationship == 1, onSelected: (s) => onRelationshipChanged(s ? 1 : null)),
-                      CustomFilterChip(label: 'Bạn bè', selected: currentRelationship == 2, onSelected: (s) => onRelationshipChanged(s ? 2 : null)),
-                      CustomFilterChip(label: 'Đồng nghiệp', selected: currentRelationship == 3, onSelected: (s) => onRelationshipChanged(s ? 3 : null)),
+                      CustomFilterChip(
+                        label: 'Gia đình',
+                        selected: currentRelationship == 0,
+                        onSelected: (s) => onRelationshipChanged(s ? 0 : null),
+                      ),
+                      CustomFilterChip(
+                        label: 'Sếp',
+                        selected: currentRelationship == 1,
+                        onSelected: (s) => onRelationshipChanged(s ? 1 : null),
+                      ),
+                      CustomFilterChip(
+                        label: 'Bạn bè',
+                        selected: currentRelationship == 2,
+                        onSelected: (s) => onRelationshipChanged(s ? 2 : null),
+                      ),
+                      CustomFilterChip(
+                        label: 'Đồng nghiệp',
+                        selected: currentRelationship == 3,
+                        onSelected: (s) => onRelationshipChanged(s ? 3 : null),
+                      ),
                     ],
                   ),
                 ],
               ),
             ),
             Padding(
-              padding: const EdgeInsets.all(16.0),
+              padding: const EdgeInsets.all(AppSpacing.md),
               child: OutlinedButton(
-                style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(45)),
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size.fromHeight(48),
+                ),
                 onPressed: () {
                   onReset();
                   Navigator.pop(context);

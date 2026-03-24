@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:greeting_app/core/theme/tet_colors.dart';
 
 class CustomFilterChip extends StatelessWidget {
   final String label;
@@ -18,8 +19,8 @@ class CustomFilterChip extends StatelessWidget {
       label: Text(label),
       selected: selected,
       onSelected: onSelected,
-      selectedColor: Colors.red.withOpacity(0.12),
-      checkmarkColor: Colors.red,
+      selectedColor: TetColors.luckyRed.withOpacity(0.12),
+      checkmarkColor: TetColors.luckyRed,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
     );
   }

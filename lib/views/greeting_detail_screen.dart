@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:greeting_app/core/theme/app_spacing.dart';
 import 'package:greeting_app/core/theme/app_theme.dart';
+import 'package:greeting_app/core/theme/tet_colors.dart';
+import 'package:greeting_app/core/widgets/animated_reveal.dart';
 import 'package:greeting_app/core/widgets/contact_footer.dart';
 import 'package:greeting_app/core/widgets/edit_tools.dart';
 import 'package:greeting_app/core/widgets/greeting_card_canvas.dart';
+import 'package:greeting_app/core/widgets/sticker_picker_sheet.dart';
 import 'package:greeting_app/data/repositories/contact_repository.dart';
 import 'package:greeting_app/data/repositories/greeting_export_repository.dart';
 import 'package:greeting_app/viewmodels/greeting_card/greeting_card_view_model.dart';
@@ -38,7 +42,11 @@ class _GreetingDetailScreenState extends State<GreetingDetailScreen> {
       value: _viewModel,
       child: Scaffold(
         appBar: AppBar(
-          title: Text('Thiết kế thiệp cho ${widget.contact.name}'),
+          title: Text(
+            'Thiết kế thiệp cho ${widget.contact.name}',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
           flexibleSpace: AppTheme.tetAppBarBackground,
           actions: [
             IconButton(
@@ -51,9 +59,24 @@ class _GreetingDetailScreenState extends State<GreetingDetailScreen> {
         body: SingleChildScrollView(
           child: Column(
             children: [
-              _buildCardCanvas(),
-              _buildEditorTools(),
-              _buildContactFooter(),
+              AnimatedReveal(
+                delay: const Duration(milliseconds: 70),
+                beginOffset: const Offset(0, 0.05),
+                child: _buildCardCanvas(),
+              ),
+              const SizedBox(height: AppSpacing.xs),
+              AnimatedReveal(
+                delay: const Duration(milliseconds: 150),
+                beginOffset: const Offset(0, 0.06),
+                child: _buildEditorTools(),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              AnimatedReveal(
+                delay: const Duration(milliseconds: 230),
+                beginOffset: const Offset(0, 0.06),
+                child: _buildContactFooter(),
+              ),
+              const SizedBox(height: AppSpacing.md),
             ],
           ),
         ),
@@ -93,7 +116,10 @@ class _GreetingDetailScreenState extends State<GreetingDetailScreen> {
               vm.removeSticker(id);
               Navigator.pop(ctx);
             },
-            child: const Text("Xóa", style: TextStyle(color: Colors.red)),
+            child: const Text(
+              "Xóa",
+              style: TextStyle(color: TetColors.actionDelete),
+            ),
           ),
         ],
       ),
@@ -103,8 +129,14 @@ class _GreetingDetailScreenState extends State<GreetingDetailScreen> {
   // 2. BỘ CÔNG CỤ ĐIỀU KHIỂN
   Widget _buildEditorTools() {
     return Consumer<GreetingCardViewModel>(
-      builder: (context, vm, _) =>
-          EditorTools(vm: vm, onAddSticker: _showStickerPicker),
+      builder: (context, vm, _) => EditorTools(
+        vm: vm,
+        onAddSticker: _showStickerPicker,
+        onAskAi: () => vm.generateAIWish(
+          widget.contact.name,
+          widget.contact.relationshipType,
+        ),
+      ),
     );
   }
 
@@ -119,38 +151,13 @@ class _GreetingDetailScreenState extends State<GreetingDetailScreen> {
 
   // Bottom Sheet chọn Sticker
   void _showStickerPicker(BuildContext context, GreetingCardViewModel vm) {
-    
-    final List<String> myStickers = [
-      'assets/stickers/hoamai.png',
-      'assets/stickers/lixi.png',
-      'assets/stickers/sticker1.png',
-      'assets/stickers/sticker2.png',
-      'assets/stickers/sticker3.png',
-      'assets/stickers/sticker4.png',
-      'assets/stickers/sticker5.png',
-    ];
-
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) => GridView.builder(
-        padding: const EdgeInsets.all(20),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 4,
-          mainAxisSpacing: 15,
-          crossAxisSpacing: 15,
-        ),
-        itemCount: myStickers.length,
-        itemBuilder: (context, index) => GestureDetector(
-          onTap: () {
-            vm.addSticker(myStickers[index]);
-            Navigator.pop(context);
-          },
-          child: Image.asset(myStickers[index]),
-        ),
-      ),
+      builder: (_) => StickerPickerSheet(cardViewModel: vm),
     );
   }
 
@@ -167,19 +174,16 @@ class _GreetingDetailScreenState extends State<GreetingDetailScreen> {
 
       // 3. Thông báo thành công
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("✨ Đã lưu thiệp vào thư viện ảnh!"),
-          backgroundColor: Colors.green,
-        ),
+        const SnackBar(content: Text("✨ Đã lưu thiệp vào thư viện ảnh!")),
       );
     } catch (e) {
       if (!mounted) return;
       Navigator.pop(context); // Đóng loading
 
       // 4. Thông báo lỗi
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Lỗi khi lưu: $e"), backgroundColor: Colors.red),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Lỗi khi lưu: $e")));
     }
   }
 
@@ -215,7 +219,10 @@ class _GreetingDetailScreenState extends State<GreetingDetailScreen> {
           ),
           TextButton(
             onPressed: () async {
-              await _viewModel.updateContactGreetingStatus(contactId: widget.contact.id, status: 2);
+              await _viewModel.updateContactGreetingStatus(
+                contactId: widget.contact.id,
+                status: 2,
+              );
               if (mounted) {
                 Navigator.pop(ctx);
                 Navigator.of(context).pop(true);

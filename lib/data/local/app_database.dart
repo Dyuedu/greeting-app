@@ -18,7 +18,12 @@ class AppDatabase {
     final dir = await getApplicationDocumentsDirectory();
     final path = join(dir.path, 'greeting_app.db');
 
-    return await openDatabase(path, version: 1, onCreate: _createDb);
+    return await openDatabase(
+      path,
+      version: 3,
+      onCreate: _createDb,
+      onUpgrade: _onUpgrade,
+    );
   }
 
   Future _createDb(Database db, int version) async {
@@ -28,7 +33,8 @@ class AppDatabase {
       name TEXT NOT NULL,
       phone TEXT NOT NULL,
       relationshipType INTEGER NOT NULL,
-      greetingStatus INTEGER NOT NULL DEFAULT 0
+      greetingStatus INTEGER NOT NULL DEFAULT 0,
+      isPinned INTEGER NOT NULL DEFAULT 0
     )
   ''');
 
@@ -52,6 +58,31 @@ class AppDatabase {
       rotation REAL NOT NULL,
       FOREIGN KEY (cardId) REFERENCES greeting_cards(id)
         ON DELETE CASCADE
+    )
+  ''');
+
+    await _createCustomStickerTable(db);
+  }
+
+  Future _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      await _createCustomStickerTable(db);
+    }
+
+    if (oldVersion < 3) {
+      await db.execute(
+        'ALTER TABLE contacts ADD COLUMN isPinned INTEGER NOT NULL DEFAULT 0',
+      );
+    }
+  }
+
+  Future<void> _createCustomStickerTable(Database db) async {
+    await db.execute('''
+    CREATE TABLE IF NOT EXISTS custom_stickers (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      localPath TEXT NOT NULL UNIQUE,
+      name TEXT NOT NULL,
+      createdAt INTEGER NOT NULL
     )
   ''');
   }

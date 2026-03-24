@@ -13,14 +13,23 @@ class ContactImportScreen extends StatefulWidget {
 
 class _ContactImportScreenState extends State<ContactImportScreen> {
   List<Contact> _allContacts = [];
+  List<Contact> _filteredContacts = [];
   Set<String> _selectedContactIds = {};
   bool _isLoading = false;
   bool _hasPermission = false;
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
 
   @override
   void initState() {
     super.initState();
     _requestPermissionAndLoadContacts();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   Future<void> _requestPermissionAndLoadContacts() async {
@@ -61,6 +70,9 @@ class _ContactImportScreenState extends State<ContactImportScreen> {
         _allContacts =
             filteredContacts; // Danh sách mới chỉ chứa liên hệ chưa nhập
         _selectedContactIds = {}; // Reset lại lựa chọn vì danh sách đã thay đổi
+        _filteredContacts = List<Contact>.from(_allContacts);
+        _searchQuery = '';
+        _searchController.clear();
       });
     } catch (e) {
       if (mounted) {
@@ -82,6 +94,24 @@ class _ContactImportScreenState extends State<ContactImportScreen> {
       } else {
         _selectedContactIds.add(contactId);
       }
+    });
+  }
+
+  void _filterContacts(String query) {
+    final normalized = query.trim().toLowerCase();
+
+    setState(() {
+      _searchQuery = query;
+      if (normalized.isEmpty) {
+        _filteredContacts = List<Contact>.from(_allContacts);
+        return;
+      }
+
+      _filteredContacts = _allContacts.where((contact) {
+        final name = contact.displayName.toLowerCase();
+        final phone = contact.phones.isEmpty ? '' : contact.phones.first.number;
+        return name.contains(normalized) || phone.contains(normalized);
+      }).toList();
     });
   }
 
@@ -162,7 +192,6 @@ class _ContactImportScreenState extends State<ContactImportScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Đã lưu thành công ${contactsToImport.length} liên hệ'),
-          backgroundColor: Colors.green,
         ),
       );
 
@@ -231,19 +260,50 @@ class _ContactImportScreenState extends State<ContactImportScreen> {
       );
     }
 
-    return ListView.builder(
-      itemCount: _allContacts.length,
-      itemBuilder: (context, index) {
-        final contact = _allContacts[index];
-        final isSelected = _selectedContactIds.contains(contact.id);
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+          child: TextField(
+            controller: _searchController,
+            onChanged: _filterContacts,
+            decoration: InputDecoration(
+              hintText: 'Tìm kiếm theo tên hoặc số điện thoại',
+              prefixIcon: const Icon(Icons.search),
+              suffixIcon: _searchQuery.isEmpty
+                  ? null
+                  : IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () {
+                        _searchController.clear();
+                        _filterContacts('');
+                      },
+                    ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ),
+        ),
+        Expanded(
+          child: _filteredContacts.isEmpty
+              ? const Center(child: Text('Không tìm thấy liên hệ phù hợp'))
+              : ListView.builder(
+                  itemCount: _filteredContacts.length,
+                  itemBuilder: (context, index) {
+                    final contact = _filteredContacts[index];
+                    final isSelected = _selectedContactIds.contains(contact.id);
 
-        return CheckboxListTile(
-          value: isSelected,
-          onChanged: (_) => _toggleSelection(contact.id),
-          title: Text(contact.displayName),
-          subtitle: Text(contact.phones.first.number),
-        );
-      },
+                    return CheckboxListTile(
+                      value: isSelected,
+                      onChanged: (_) => _toggleSelection(contact.id),
+                      title: Text(contact.displayName),
+                      subtitle: Text(contact.phones.first.number),
+                    );
+                  },
+                ),
+        ),
+      ],
     );
   }
 }

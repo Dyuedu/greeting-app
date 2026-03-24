@@ -1,6 +1,7 @@
-
+import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:greeting_app/core/theme/tet_colors.dart';
 import 'package:greeting_app/data/domain/sticker_item.dart';
 
 class DraggableSticker extends StatelessWidget {
@@ -39,22 +40,39 @@ class DraggableSticker extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.all(4),
             decoration: BoxDecoration(
-              // Hiện viền xanh nếu sticker đang được chọn
+              // Dùng màu nhấn thống nhất để làm nổi sticker đang chọn.
               border: Border.all(
-                color: isSelected ? Colors.blueAccent : Colors.transparent,
+                color: isSelected
+                    ? TetColors.selectionHighlight
+                    : Colors.transparent,
                 width: 2,
               ),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Image.asset(
-              sticker.imagePath,
-              width: 100,
-              height: 100,
-              fit: BoxFit.contain,
-            ),
+            child: _buildStickerImage(),
           ),
         ),
       ),
     );
+  }
+
+  Widget _buildStickerImage() {
+    final isAsset = sticker.imagePath.startsWith('assets/');
+    final imageWidget = isAsset
+        ? Image.asset(
+            sticker.imagePath,
+            width: 100,
+            height: 100,
+            fit: BoxFit.contain,
+          )
+        : Image.file(
+            File(sticker.imagePath),
+            width: 100,
+            height: 100,
+            fit: BoxFit.contain,
+            errorBuilder: (context, error, stackTrace) =>
+                const Icon(Icons.broken_image, size: 40),
+          );
+    return imageWidget;
   }
 }

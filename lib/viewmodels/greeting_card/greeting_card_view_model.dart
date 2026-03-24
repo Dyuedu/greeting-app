@@ -1,5 +1,8 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:google_generative_ai/google_generative_ai.dart';
+import 'package:greeting_app/core/theme/tet_colors.dart';
+import 'package:greeting_app/data/domain/greeting_template.dart';
 import 'package:greeting_app/data/domain/sticker_item.dart';
 import 'package:greeting_app/data/repositories/contact_repository.dart';
 import 'package:greeting_app/data/repositories/greeting_export_repository.dart';
@@ -11,11 +14,141 @@ class GreetingCardViewModel extends ChangeNotifier {
   final GreetingExportRepository _exportRepository;
   final ContactRepository _contactRepository;
   File? backgroundImage;
+  String? backgroundAssetPath;
   String message = "Chúc Mừng Năm Mới!";
-  Color textColor = Colors.redAccent;
+  Color textColor = TetColors.luckyRed;
+  String messageFontFamily = 'UVNSangSong';
+  String? activeTemplateId;
   String? selectedStickerId; // ID của sticker đang được chọn
   bool isProcessing = false; // Trạng thái đang xử lý (export/saving)
+  bool isAiGenerating = false; // Trạng thái đang tạo nội dung AI
   GreetingCardViewModel(this._exportRepository, this._contactRepository);
+
+  static const List<GreetingTemplate> templateLibrary = [
+    GreetingTemplate(
+      id: 'ong_ba',
+      title: 'Chúc ông bà',
+      message: 'Kính chúc ông bà năm mới mạnh khỏe, bình an và sum vầy.',
+      backgroundAssetPath: 'assets/background/bg2.jpg',
+      textColor: TetColors.luckyRed,
+      fontFamily: 'UVNSangSong',
+      suggestedStickerPaths: [
+      ],
+    ),
+    GreetingTemplate(
+      id: 'bo_me',
+      title: 'Chúc bố mẹ',
+      message: 'Con kính chúc bố mẹ năm mới sức khỏe dồi dào, luôn an vui.',
+      backgroundAssetPath: 'assets/background/bg1.jpg',
+      textColor: TetColors.prosperityGoldLight,
+      fontFamily: 'UVNSangSong',
+      suggestedStickerPaths: [
+        'assets/stickers/hoamai.png',
+        'assets/stickers/sticker1.png',
+      ],
+    ),
+    GreetingTemplate(
+      id: 'anh_chi',
+      title: 'Chúc anh chị',
+      message:
+          'Chúc anh chị năm mới phát tài, thuận lợi và ngập tràn niềm vui.',
+      backgroundAssetPath: 'assets/background/bg3.jpg',
+      textColor: TetColors.deepOrange,
+      fontFamily: 'UVNSangSong',
+      suggestedStickerPaths: [
+      ],
+    ),
+    GreetingTemplate(
+      id: 'sep',
+      title: 'Chúc sếp',
+      message: 'Kính chúc sếp năm mới an khang, sự nghiệp hanh thông.',
+      backgroundAssetPath: 'assets/background/bg4.jpg',
+      textColor: TetColors.lightGold,
+      fontFamily: 'UVNSangSong',
+      suggestedStickerPaths: [
+        'assets/stickers/sticker1.png',
+      ],
+    ),
+    GreetingTemplate(
+      id: 'khach_hang',
+      title: 'Chúc khách hàng',
+      message: 'Chúc Quý khách năm mới thịnh vượng, hợp tác bền lâu.',
+      backgroundAssetPath: 'assets/background/bg5.jpg',
+      textColor: TetColors.deepOrange,
+      fontFamily: 'UVNSangSong',
+      suggestedStickerPaths: [
+        'assets/stickers/sticker2.png',
+      ],
+    ),
+    GreetingTemplate(
+      id: 'ban_be',
+      title: 'Chúc bạn bè',
+      message: 'Năm mới rực rỡ, gặp nhiều may mắn và thật nhiều niềm vui!',
+      backgroundAssetPath: 'assets/background/bg6.jpg',
+      textColor: TetColors.luckyRedLight,
+      fontFamily: 'UVNSangSong',
+      suggestedStickerPaths: [
+      ],
+    ),
+    GreetingTemplate(
+      id: 'dong_nghiep',
+      title: 'Chúc đồng nghiệp',
+      message:
+          'Chúc bạn đồng nghiệp năm mới nhiều thành công, hợp tác suôn sẻ.',
+      backgroundAssetPath: 'assets/background/bg7.jpg',
+      textColor: TetColors.luckyRedDark,
+      fontFamily: 'UVNSangSong',
+      suggestedStickerPaths: [
+      ],
+    ),
+  ];
+
+  String _getRelationshipLabel(int? type) {
+    return switch (type) {
+      0 => 'Gia đình',
+      1 => 'Sếp/Cấp trên',
+      2 => 'Bạn bè',
+      3 => 'Đồng nghiệp',
+      _ => 'Người quen',
+    };
+  }
+
+  Future<void> generateAIWish(String contactName, int? relationshipType) async {
+    try {
+      isAiGenerating = true;
+      notifyListeners();
+
+      final model = GenerativeModel(
+        model: 'gemini-2.5-flash',
+        apiKey: 'AIzaSyB-uBBWuFcyjCh_171ndGcSMGhN0uM-2s0',
+      );
+
+      // 2. Chuyển đổi type sang tên gọi thân mật
+      final role = _getRelationshipLabel(relationshipType);
+
+      // 3. Xây dựng Prompt "xịn"
+      final prompt =
+          """
+      Hãy viết một lời chúc Tết Nguyên Đán 2026 ngắn gọn, ý nghĩa.
+      Người nhận: $contactName (Mối quan hệ: $role).
+      Yêu cầu: Câu từ lịch sự, ấm áp, chỉ trả về đúng nội dung lời chúc, không thêm dẫn nhập.
+      Nội dung không quá 20 từ (khoảng 2 câu).
+      """;
+
+      final response = await model.generateContent([Content.text(prompt)]);
+
+      if (response.text != null) {
+        // Cập nhật lời chúc vào message của thiệp
+        updateMessage(response.text!.trim());
+      }
+    } catch (e) {
+      debugPrint("Lỗi Gemini: $e");
+      rethrow;
+    } finally {
+      isAiGenerating = false;
+      notifyListeners();
+    }
+  }
 
   Future<void> exportAndSave(ScreenshotController controller) async {
     try {
@@ -212,10 +345,48 @@ class GreetingCardViewModel extends ChangeNotifier {
     print("Đã nhận ảnh tại: ${image.path}");
     if (image.existsSync()) {
       backgroundImage = image;
+      backgroundAssetPath = null;
       notifyListeners();
     } else {
       print("File không tồn tại!");
     }
+  }
+
+  void setBackgroundAsset(String path) {
+    backgroundAssetPath = path;
+    backgroundImage = null;
+    notifyListeners();
+  }
+
+  void setMessageFontFamily(String fontFamily) {
+    messageFontFamily = fontFamily;
+    notifyListeners();
+  }
+
+  void applyTemplate(GreetingTemplate template) {
+    activeTemplateId = template.id;
+    message = template.message;
+    textColor = template.textColor;
+    messageFontFamily = template.fontFamily;
+    backgroundAssetPath = template.backgroundAssetPath;
+    backgroundImage = null;
+
+    // Thay bộ sticker bằng gợi ý của template để người dùng có preset nhanh.
+    stickers = template.suggestedStickerPaths
+        .asMap()
+        .entries
+        .map(
+          (entry) => StickerItem(
+            id: '${template.id}_${DateTime.now().microsecondsSinceEpoch}_$entry',
+            imagePath: entry.value,
+            position: Offset(70 + (entry.key * 120), 90 + (entry.key * 40)),
+            scale: 0.95,
+          ),
+        )
+        .toList();
+
+    selectedStickerId = null;
+    notifyListeners();
   }
 
   final List<String> suggestions = [

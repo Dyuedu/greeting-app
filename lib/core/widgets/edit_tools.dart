@@ -1,6 +1,8 @@
 import 'dart:io';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:greeting_app/core/theme/app_spacing.dart';
+import 'package:greeting_app/core/theme/tet_colors.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:greeting_app/data/domain/sticker_item.dart';
 import 'package:greeting_app/viewmodels/greeting_card/greeting_card_view_model.dart';
@@ -8,15 +10,19 @@ import 'package:greeting_app/viewmodels/greeting_card/greeting_card_view_model.d
 class EditorTools extends StatelessWidget {
   final GreetingCardViewModel vm;
   final Function(BuildContext, GreetingCardViewModel) onAddSticker;
+  final VoidCallback? onAskAi;
 
   const EditorTools({
     super.key,
     required this.vm,
     required this.onAddSticker,
+    this.onAskAi,
   });
 
   @override
   Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+
     final selectedSticker = vm.selectedStickerId != null
         ? vm.stickers.cast<StickerItem?>().firstWhere(
             (s) => s?.id == vm.selectedStickerId,
@@ -25,7 +31,10 @@ class EditorTools extends StatelessWidget {
         : null;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.xs,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -33,15 +42,12 @@ class EditorTools extends StatelessWidget {
             children: [
               Expanded(
                 child: OutlinedButton.icon(
-                  onPressed: () async {
-                    final XFile? image = await ImagePicker().pickImage(source: ImageSource.gallery);
-                    if (image != null) vm.setBackgroundImage(File(image.path));
-                  },
+                  onPressed: () => _showBackgroundSourcePicker(context),
                   icon: const Icon(Icons.photo_library),
                   label: const Text("Ảnh nền"),
                 ),
               ),
-              const SizedBox(width: 10),
+              const SizedBox(width: AppSpacing.sm),
               Expanded(
                 child: ElevatedButton.icon(
                   onPressed: () => onAddSticker(context, vm),
@@ -52,27 +58,112 @@ class EditorTools extends StatelessWidget {
             ],
           ),
 
-          if (selectedSticker != null) ...[
-            const SizedBox(height: 15),
-            _buildScaleSlider(selectedSticker),
-            const SizedBox(height: 10),
-            _buildRotationSlider(selectedSticker),
-          ],
-
-          const SizedBox(height: 15),
-          TextField(
+          const SizedBox(height: AppSpacing.md),
+          Text('Mẫu nhanh theo chủ đề:', style: textTheme.titleMedium),
+          const SizedBox(height: AppSpacing.xs),
+          DropdownButtonFormField<String>(
+            value: vm.activeTemplateId,
+            isExpanded: true,
+            borderRadius: BorderRadius.circular(12),
             decoration: InputDecoration(
-              labelText: "Nội dung lời chúc",
-              prefixIcon: const Icon(Icons.edit_note),
-              border: const OutlineInputBorder(),
-              suffixIcon: _buildSuggestionMenu(),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.md,
+                vertical: AppSpacing.sm,
+              ),
+              prefixIcon: const Icon(
+                Icons.style_outlined,
+                color: TetColors.prosperityGoldDark,
+              ),
+              filled: true,
+              fillColor: TetColors.warmCream,
             ),
-            onChanged: (val) => vm.updateMessage(val),
+            hint: const Text('Chọn mẫu thiệp để áp dụng nhanh'),
+            items: GreetingCardViewModel.templateLibrary
+                .map(
+                  (template) => DropdownMenuItem<String>(
+                    value: template.id,
+                    child: Text(template.title),
+                  ),
+                )
+                .toList(),
+            onChanged: (templateId) {
+              if (templateId == null) return;
+              final template = GreetingCardViewModel.templateLibrary.firstWhere(
+                (item) => item.id == templateId,
+              );
+              vm.applyTemplate(template);
+            },
           ),
 
-          const SizedBox(height: 20),
-          const Text("Màu sắc lời chúc:", style: TextStyle(fontWeight: FontWeight.bold)),
-          const SizedBox(height: 10),
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 280),
+            switchInCurve: Curves.easeOutCubic,
+            switchOutCurve: Curves.easeInCubic,
+            child: selectedSticker == null
+                ? const SizedBox.shrink()
+                : Padding(
+                    key: ValueKey(selectedSticker.id),
+                    padding: const EdgeInsets.only(top: AppSpacing.md),
+                    child: Column(
+                      children: [
+                        _buildScaleSlider(selectedSticker),
+                        const SizedBox(height: AppSpacing.sm),
+                        _buildRotationSlider(selectedSticker),
+                      ],
+                    ),
+                  ),
+          ),
+
+          const SizedBox(height: AppSpacing.md),
+          Autocomplete<String>(
+            optionsBuilder: (textEditingValue) {
+              if (textEditingValue.text.isEmpty) {
+                return const Iterable<String>.empty();
+              }
+              // Lọc danh sách gợi ý dựa trên văn bản đã nhập
+              return vm.suggestions.where(
+                (s) => s.toLowerCase().contains(
+                  textEditingValue.text.toLowerCase(),
+                ),
+              );
+            },
+            onSelected: (val) => vm.updateMessage(val),
+            fieldViewBuilder:
+                (context, textEditingController, focusNode, onFieldSubmitted) {
+                  if (textEditingController.text != vm.message) {
+                    textEditingController.text = vm.message;
+                  }
+                  return TextField(
+                    controller: textEditingController,
+                    focusNode: focusNode,
+                    decoration: InputDecoration(
+                      labelText: "Nội dung lời chúc",
+                      prefixIcon: const Icon(Icons.edit_note),
+                      border: const OutlineInputBorder(),
+                      suffixIcon: IconButton(
+                        icon: vm.isAiGenerating
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Icon(
+                                Icons.auto_awesome,
+                                color: TetColors.prosperityGoldDark,
+                              ),
+                        onPressed: onAskAi,
+                        tooltip: "Gợi ý lời chúc từ AI",
+                      ),
+                    ),
+                    onChanged: (val) => vm.updateMessage(val),
+                  );
+                },
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          Text("Màu sắc lời chúc:", style: textTheme.titleMedium),
+          const SizedBox(height: AppSpacing.sm),
           _buildColorPicker(),
         ],
       ),
@@ -83,21 +174,26 @@ class EditorTools extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.blue.withOpacity(0.05),
+        color: TetColors.statusMessaged.withOpacity(0.06),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.blue.withOpacity(0.2)),
+        border: Border.all(color: TetColors.statusMessaged.withOpacity(0.22)),
       ),
       child: Row(
         children: [
-          const Icon(Icons.zoom_in, size: 22, color: Colors.blue),
+          const Icon(Icons.zoom_in, size: 22, color: TetColors.statusMessaged),
           Expanded(
             child: Slider(
               value: sticker.scale,
-              min: 0.5, max: 3.0, divisions: 25,
+              min: 0.5,
+              max: 3.0,
+              divisions: 25,
               onChanged: (val) => vm.updateStickerScale(val),
             ),
           ),
-          IconButton(icon: const Icon(Icons.close, size: 18), onPressed: () => vm.selectSticker(null)),
+          IconButton(
+            icon: const Icon(Icons.close, size: 18),
+            onPressed: () => vm.selectSticker(null),
+          ),
         ],
       ),
     );
@@ -108,13 +204,13 @@ class EditorTools extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.deepOrange.withOpacity(0.05),
+        color: TetColors.deepOrange.withOpacity(0.06),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.deepOrange.withOpacity(0.2)),
+        border: Border.all(color: TetColors.deepOrange.withOpacity(0.22)),
       ),
       child: Row(
         children: [
-          const Icon(Icons.rotate_right, size: 22, color: Colors.deepOrange),
+          const Icon(Icons.rotate_right, size: 22, color: TetColors.deepOrange),
           Expanded(
             child: Slider(
               value: sticker.rotation,
@@ -139,14 +235,25 @@ class EditorTools extends StatelessWidget {
 
   Widget _buildSuggestionMenu() {
     return PopupMenuButton<String>(
-      icon: const Icon(Icons.auto_awesome, color: Colors.orange),
+      icon: const Icon(Icons.auto_awesome, color: TetColors.prosperityGoldDark),
       onSelected: (val) => vm.updateMessage(val),
-      itemBuilder: (context) => vm.suggestions.map((s) => PopupMenuItem(value: s, child: Text(s))).toList(),
+      itemBuilder: (context) => vm.suggestions
+          .map((s) => PopupMenuItem(value: s, child: Text(s)))
+          .toList(),
     );
   }
 
   Widget _buildColorPicker() {
-    final colors = [Colors.red, Colors.yellow, Colors.orange, Colors.pink, Colors.white, Colors.black, Colors.greenAccent, Colors.purpleAccent];
+    final colors = [
+      TetColors.luckyRed,
+      TetColors.prosperityGold,
+      TetColors.deepOrange,
+      TetColors.darkRed,
+      TetColors.warmWhite,
+      Colors.black,
+      TetColors.statusCalled,
+      TetColors.statusMessaged,
+    ];
     return SizedBox(
       height: 45,
       child: ListView.builder(
@@ -162,14 +269,136 @@ class EditorTools extends StatelessWidget {
               margin: const EdgeInsets.only(right: 14),
               width: isSelected ? 42 : 35,
               decoration: BoxDecoration(
-                color: color, shape: BoxShape.circle,
-                border: Border.all(color: isSelected ? Colors.blue : Colors.grey.withOpacity(0.3), width: isSelected ? 3 : 1),
+                color: color,
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: isSelected
+                      ? TetColors.selectionHighlight
+                      : TetColors.statusUnknown.withOpacity(0.35),
+                  width: isSelected ? 3 : 1,
+                ),
               ),
-              child: isSelected ? Icon(Icons.check, color: color == Colors.white ? Colors.black : Colors.white, size: 20) : null,
+              child: isSelected
+                  ? Icon(
+                      Icons.check,
+                      color: color == Colors.white
+                          ? Colors.black
+                          : Colors.white,
+                      size: 20,
+                    )
+                  : null,
             ),
           );
         },
       ),
+    );
+  }
+
+  Future<void> _showBackgroundSourcePicker(BuildContext context) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      builder: (ctx) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  'Chọn nguồn ảnh nền',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                ListTile(
+                  leading: const Icon(Icons.photo_library_outlined),
+                  title: const Text('Lấy ảnh từ máy'),
+                  onTap: () async {
+                    Navigator.of(ctx).pop();
+                    await _pickBackgroundFromDevice();
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.wallpaper_outlined),
+                  title: const Text('Lấy ảnh từ hệ thống'),
+                  onTap: () {
+                    Navigator.of(ctx).pop();
+                    _showSystemBackgroundPicker(context);
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _pickBackgroundFromDevice() async {
+    final XFile? image = await ImagePicker().pickImage(
+      source: ImageSource.gallery,
+    );
+    if (image == null) return;
+    vm.setBackgroundImage(File(image.path));
+  }
+
+  Future<void> _showSystemBackgroundPicker(BuildContext context) async {
+    final backgroundAssets =
+        GreetingCardViewModel.templateLibrary
+            .map((template) => template.backgroundAssetPath)
+            .toSet()
+            .toList()
+          ..sort();
+
+    if (backgroundAssets.isEmpty) return;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Chọn ảnh nền hệ thống',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                SizedBox(
+                  height: 250,
+                  child: GridView.builder(
+                    itemCount: backgroundAssets.length,
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 3,
+                          crossAxisSpacing: AppSpacing.xs,
+                          mainAxisSpacing: AppSpacing.xs,
+                        ),
+                    itemBuilder: (_, index) {
+                      final assetPath = backgroundAssets[index];
+                      return InkWell(
+                        borderRadius: BorderRadius.circular(10),
+                        onTap: () {
+                          vm.setBackgroundAsset(assetPath);
+                          Navigator.of(ctx).pop();
+                        },
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(10),
+                          child: Image.asset(assetPath, fit: BoxFit.cover),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }

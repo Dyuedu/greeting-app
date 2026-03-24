@@ -12,9 +12,19 @@ abstract class ContactRepository {
     required int greetingStatus,
   });
 
+  Future<void> updateGreetingStatusForMany({
+    required List<int> contactIds,
+    required int greetingStatus,
+  });
+
   Future<void> updateRelationshipType({
     required int contactId,
     required int relationshipType,
+  });
+
+  Future<void> updatePinnedStatus({
+    required int contactId,
+    required bool isPinned,
   });
 
   Future<void> deleteContact(int id);
@@ -24,7 +34,7 @@ abstract class ContactRepository {
   Future<List<Contact>> getByGreetingStatus(int status);
 
   Future<List<Contact>> filterContacts({
-     int? relationshipType,
-     int? greetingStatus,
+    int? relationshipType,
+    int? greetingStatus,
   });
 }

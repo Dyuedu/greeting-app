@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:greeting_app/core/theme/app_theme.dart';
+import 'package:greeting_app/core/theme/app_spacing.dart';
+import 'package:greeting_app/core/theme/tet_colors.dart';
+import 'package:greeting_app/core/widgets/animated_reveal.dart';
 import 'package:greeting_app/core/widgets/contact_filter_drawer.dart';
 import 'package:greeting_app/data/domain/contact.dart';
 import 'package:greeting_app/viewmodels/contact/contact_list_view_model.dart';
+import 'package:greeting_app/views/broadcast/broadcast_contact_select_screen.dart';
 import 'package:greeting_app/views/contact_import_screen.dart';
 import 'package:greeting_app/views/greeting_detail_screen.dart';
 import 'package:provider/provider.dart';
@@ -29,10 +33,14 @@ class _ContactListScreenState extends State<ContactListScreen> {
   @override
   Widget build(BuildContext context) {
     final vm = context.watch<ContactListViewModel>();
+    final textTheme = Theme.of(context).textTheme;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Quản lý lời chúc Tết'),
+        title: Text(
+          'Quản lý lời chúc Tết',
+          style: textTheme.titleLarge?.copyWith(color: Colors.yellowAccent),
+        ),
         flexibleSpace: AppTheme.tetAppBarBackground,
         actions: [
           Builder(
@@ -90,6 +98,26 @@ class _ContactListScreenState extends State<ContactListScreen> {
         },
       ),
       body: _buildBody(vm),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () async {
+          final result = await Navigator.of(context).push<bool>(
+            MaterialPageRoute(
+              builder: (_) => const BroadcastContactSelectScreen(),
+            ),
+          );
+
+          if (result == true && mounted) {
+            await context.read<ContactListViewModel>().refresh();
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Đã cập nhật trạng thái gửi hàng loạt.'),
+              ),
+            );
+          }
+        },
+        icon: const Icon(Icons.send),
+        label: Text('Gửi hàng loạt', style: textTheme.labelLarge),
+      ),
     );
   }
 
@@ -99,12 +127,20 @@ class _ContactListScreenState extends State<ContactListScreen> {
     }
 
     if (vm.error != null) {
-      return Center(child: Text('Lỗi: ${vm.error}'));
+      return Center(
+        child: Text(
+          'Lỗi: ${vm.error}',
+          style: Theme.of(context).textTheme.bodyMedium,
+        ),
+      );
     }
 
     if (vm.contacts.isEmpty) {
       return const Center(
-        child: Text('Chưa có liên hệ nào, hãy nhập danh bạ để bắt đầu.'),
+        child: Padding(
+          padding: EdgeInsets.all(AppSpacing.xl),
+          child: Text('Chưa có liên hệ nào, hãy nhập danh bạ để bắt đầu.'),
+        ),
       );
     }
 
@@ -114,59 +150,84 @@ class _ContactListScreenState extends State<ContactListScreen> {
       itemBuilder: (context, index) {
         final contact = vm.contacts[index];
 
-        return ListTile(
-          title: Text(contact.name),
-          subtitle: Text(_buildSubtitle(contact)),
-          trailing: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Cố định kích thước cho nút Edit
-              SizedBox(
-                width: 40,
-                child: IconButton(
-                  icon: const Icon(
-                    Icons.edit_outlined,
-                    color: Colors.teal,
-                    size: 22,
+        return AnimatedReveal(
+          delay: Duration(milliseconds: 25 * (index > 12 ? 12 : index)),
+          beginOffset: const Offset(0, 0.05),
+          child: ListTile(
+            leading: IconButton(
+              icon: Icon(
+                contact.isPinned
+                    ? Icons.push_pin_rounded
+                    : Icons.push_pin_outlined,
+                color: contact.isPinned
+                    ? TetColors.prosperityGoldDark
+                    : TetColors.statusUnknown,
+                size: 22,
+              ),
+              tooltip: contact.isPinned
+                  ? 'Bỏ ghim liên hệ'
+                  : 'Đánh dấu quan trọng',
+              onPressed: () => _togglePinned(contact),
+            ),
+            title: Text(
+              contact.name,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            subtitle: Text(
+              _buildSubtitle(contact),
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Cố định kích thước cho nút Edit
+                SizedBox(
+                  width: 40,
+                  child: IconButton(
+                    icon: const Icon(
+                      Icons.edit_outlined,
+                      color: TetColors.actionEdit,
+                      size: 22,
+                    ),
+                    tooltip: 'Sửa mối quan hệ',
+                    onPressed: () => _editRelationship(contact),
+                    padding:
+                        EdgeInsets.zero, // Giảm padding để tiết kiệm không gian
                   ),
-                  tooltip: 'Sửa mối quan hệ',
-                  onPressed: () => _editRelationship(contact),
-                  padding:
-                      EdgeInsets.zero, // Giảm padding để tiết kiệm không gian
                 ),
-              ),
-              // Cố định kích thước cho nút Delete
-              SizedBox(
-                width: 40,
-                child: IconButton(
-                  icon: const Icon(
-                    Icons.delete_outline,
-                    color: Colors.redAccent,
-                    size: 22,
+                // Cố định kích thước cho nút Delete
+                SizedBox(
+                  width: 40,
+                  child: IconButton(
+                    icon: const Icon(
+                      Icons.delete_outline,
+                      color: TetColors.actionDelete,
+                      size: 22,
+                    ),
+                    tooltip: 'Xóa liên hệ',
+                    onPressed: () => _confirmDelete(contact),
+                    padding: EdgeInsets.zero,
                   ),
-                  tooltip: 'Xóa liên hệ',
-                  onPressed: () => _confirmDelete(contact),
-                  padding: EdgeInsets.zero,
                 ),
-              ),
-              const SizedBox(width: 4),
-              // Quan trọng nhất: Cố định không gian cho Chip
-              SizedBox(
-                width: 90, // Khoảng cách đủ rộng cho chữ dài nhất ("Chưa gửi")
-                child: Center(child: _buildStatusChip(contact)),
-              ),
-            ],
+                const SizedBox(width: AppSpacing.xxs),
+                // Quan trọng nhất: Cố định không gian cho Chip
+                SizedBox(
+                  width: 98,
+                  child: Center(child: _buildStatusChip(contact)),
+                ),
+              ],
+            ),
+            onTap: () async {
+              final result = await Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => GreetingDetailScreen(contact: contact),
+                ),
+              );
+              if (result == true) {
+                context.read<ContactListViewModel>().refresh();
+              }
+            },
           ),
-          onTap: () async {
-            final result = await Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => GreetingDetailScreen(contact: contact),
-              ),
-            );
-            if (result == true) {
-              context.read<ContactListViewModel>().refresh();
-            }
-          },
         );
       },
     );
@@ -179,25 +240,29 @@ class _ContactListScreenState extends State<ContactListScreen> {
   }
 
   Widget _buildStatusChip(Contact contact) {
-    final (label, color) = switch (contact.greetingStatus) {
-      0 => ('Chưa gửi', Colors.orange),
-      1 => ('Đã gọi', Colors.green),
-      2 => ('Đã nhắn', Colors.blue),
-      _ => ('Không rõ', Colors.grey),
+    final (label, color, icon) = switch (contact.greetingStatus) {
+      0 => ('Chưa gửi', TetColors.statusPending, Icons.schedule_rounded),
+      1 => ('Đã gọi', TetColors.statusCalled, Icons.phone_in_talk_rounded),
+      2 => ('Đã nhắn', TetColors.statusMessaged, Icons.mark_chat_read_rounded),
+      _ => ('Không rõ', TetColors.statusUnknown, Icons.help_outline_rounded),
     };
 
     return Chip(
-      label: Container(
-        width: 60, // Cố định chiều rộng của text bên trong chip
-        height: 20, // Cố định chiều cao của chip
-        alignment: Alignment.center,
+      avatar: Icon(icon, size: 14, color: color),
+      label: SizedBox(
+        width: 60,
         child: Text(
           label,
-          style: TextStyle(color: color, fontSize: 12),
-          overflow: TextOverflow.ellipsis, // Đề phòng trường hợp chữ quá dài
+          style: TextStyle(
+            color: color,
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+          ),
+          overflow: TextOverflow.ellipsis,
+          textAlign: TextAlign.center,
         ),
       ),
-      backgroundColor: color.withOpacity(0.12),
+      backgroundColor: color.withOpacity(0.14),
       padding: EdgeInsets.zero,
       materialTapTargetSize:
           MaterialTapTargetSize.shrinkWrap, // Giảm khoảng cách thừa
@@ -224,10 +289,10 @@ class _ContactListScreenState extends State<ContactListScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               const Padding(
-                padding: EdgeInsets.symmetric(vertical: 12),
+                padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
                 child: Text(
                   'Chọn mối quan hệ',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
                 ),
               ),
               ...options.map(
@@ -238,7 +303,7 @@ class _ContactListScreenState extends State<ContactListScreen> {
                   onChanged: (val) => Navigator.of(context).pop(val),
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: AppSpacing.xs),
             ],
           ),
         );
@@ -283,7 +348,7 @@ class _ContactListScreenState extends State<ContactListScreen> {
               FilledButton(
                 onPressed: () => Navigator.of(context).pop(true),
                 style: FilledButton.styleFrom(
-                  backgroundColor: Colors.redAccent,
+                  backgroundColor: TetColors.actionDelete,
                 ),
                 child: const Text('XÓA'),
               ),
@@ -300,6 +365,26 @@ class _ContactListScreenState extends State<ContactListScreen> {
       messenger.showSnackBar(SnackBar(content: Text('Đã xóa ${contact.name}')));
     } catch (e) {
       messenger.showSnackBar(SnackBar(content: Text('Xóa thất bại: $e')));
+    }
+  }
+
+  Future<void> _togglePinned(Contact contact) async {
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await context.read<ContactListViewModel>().togglePinned(contact);
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            contact.isPinned
+                ? 'Đã bỏ ghim ${contact.name}'
+                : 'Đã ghim ${contact.name} lên đầu',
+          ),
+        ),
+      );
+    } catch (e) {
+      messenger.showSnackBar(
+        SnackBar(content: Text('Cập nhật ghim thất bại: $e')),
+      );
     }
   }
 }

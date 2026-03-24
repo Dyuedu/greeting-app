@@ -34,6 +34,19 @@ class ContactRepositoryImpl implements ContactRepository {
   }
 
   @override
+  Future<void> updateGreetingStatusForMany({
+    required List<int> contactIds,
+    required int greetingStatus,
+  }) async {
+    if (contactIds.isEmpty) return;
+
+    await _dao.updateGreetingStatusForMany(
+      contactIds: contactIds,
+      greetingStatus: greetingStatus,
+    );
+  }
+
+  @override
   Future<void> updateRelationshipType({
     required int contactId,
     required int relationshipType,
@@ -42,6 +55,14 @@ class ContactRepositoryImpl implements ContactRepository {
       contactId: contactId,
       relationshipType: relationshipType,
     );
+  }
+
+  @override
+  Future<void> updatePinnedStatus({
+    required int contactId,
+    required bool isPinned,
+  }) async {
+    await _dao.updatePinnedStatus(contactId: contactId, isPinned: isPinned);
   }
 
   @override

@@ -1,16 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:greeting_app/core/theme/tet_colors.dart';
 import 'package:greeting_app/core/widgets/draggable_sticker.dart';
 import 'package:greeting_app/viewmodels/greeting_card/greeting_card_view_model.dart';
 import 'package:provider/provider.dart';
 
-
 class GreetingCardCanvas extends StatelessWidget {
   final Function(String stickerId) onDeleteRequest;
 
-  const GreetingCardCanvas({
-    super.key,
-    required this.onDeleteRequest,
-  });
+  const GreetingCardCanvas({super.key, required this.onDeleteRequest});
 
   @override
   Widget build(BuildContext context) {
@@ -45,7 +42,7 @@ class GreetingCardCanvas extends StatelessWidget {
                     _buildBackground(vm),
 
                     // 2. Lớp Lời chúc (Text overlay)
-                    _buildMessage(vm),
+                    _buildMessage(context, vm),
 
                     // 3. Lớp Danh sách Sticker
                     ...vm.stickers.map((sticker) {
@@ -88,36 +85,54 @@ class GreetingCardCanvas extends StatelessWidget {
               fit: BoxFit.cover,
               gaplessPlayback: true,
             )
+          : vm.backgroundAssetPath != null
+          ? Image.asset(vm.backgroundAssetPath!, fit: BoxFit.cover)
           : Container(
-              color: Colors.red[50],
+              color: TetColors.warmCream,
               child: Icon(
                 Icons.image,
-                color: Colors.red[200],
+                color: TetColors.luckyRedLight.withOpacity(0.6),
                 size: 50,
               ),
             ),
     );
   }
 
-  Widget _buildMessage(GreetingCardViewModel vm) {
+  Widget _buildMessage(BuildContext context, GreetingCardViewModel vm) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Text(
-          vm.message,
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            color: vm.textColor,
-            fontSize: 30,
-            fontWeight: FontWeight.bold,
-            fontFamily: 'UVNSangSong',
-            shadows: [
-              Shadow(
-                color: Colors.white.withOpacity(0.8),
-                blurRadius: 10,
-                offset: const Offset(1, 1),
+        // Padding lớn hơn để không đè lên viền hoặc sticker cố định ở góc
+        padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 60),
+        child: ConstrainedBox(
+          // Giới hạn vùng chứa text không được vượt quá 80% chiều cao thiệp
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.3,
+          ),
+          child: FittedBox(
+            fit: BoxFit.scaleDown, // Tự động thu nhỏ chữ nếu nội dung quá dài
+            child: Container(
+              alignment: Alignment.center,
+              width: MediaQuery.of(
+                context,
+              ).size.width, // Tạo chiều rộng ảo để text xuống dòng
+              child: Text(
+                vm.message,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: vm.textColor,
+                  fontSize: 30, // Kích thước gốc, sẽ bị scale down nếu cần
+                  fontWeight: FontWeight.bold,
+                  fontFamily: vm.messageFontFamily,
+                  shadows: [
+                    Shadow(
+                      color: Colors.white.withOpacity(0.8),
+                      blurRadius: 10,
+                      offset: const Offset(1, 1),
+                    ),
+                  ],
+                ),
               ),
-            ],
+            ),
           ),
         ),
       ),

@@ -54,15 +54,12 @@ class AppTheme {
         foregroundColor: TetColors.prosperityGold,
         elevation: 4,
         centerTitle: true,
-        iconTheme: const IconThemeData(
+        iconTheme: const IconThemeData(color: Colors.yellow, size: 24),
+        titleTextStyle: const TextStyle(
           color: Colors.yellow,
-          size: 24,
-        ),
-        titleTextStyle: TextStyle(
-          color: Colors.yellow,
-          fontSize: 20,
-          fontWeight: FontWeight.bold,
-          letterSpacing: 0.5,
+          fontSize: 22,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.3,
         ),
       ),
 
@@ -79,6 +76,7 @@ class AppTheme {
       cardTheme: CardThemeData(
         color: TetColors.warmCream,
         elevation: 2,
+        margin: const EdgeInsets.all(0),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
           side: BorderSide(
@@ -169,6 +167,9 @@ class AppTheme {
         selectedTileColor: TetColors.prosperityGoldLight.withOpacity(0.3),
         iconColor: TetColors.luckyRed,
         textColor: TetColors.darkRed,
+        dense: false,
+        minVerticalPadding: 10,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
 
@@ -179,26 +180,87 @@ class AppTheme {
       textTheme: const TextTheme(
         displayLarge: TextStyle(
           color: TetColors.darkRed,
-          fontWeight: FontWeight.bold,
+          fontSize: 40,
+          fontWeight: FontWeight.w700,
+          height: 1.15,
+          letterSpacing: 0.2,
         ),
         displayMedium: TextStyle(
           color: TetColors.darkRed,
-          fontWeight: FontWeight.bold,
+          fontSize: 34,
+          fontWeight: FontWeight.w700,
+          height: 1.18,
         ),
         displaySmall: TextStyle(
           color: TetColors.darkRed,
+          fontSize: 28,
           fontWeight: FontWeight.w600,
+          height: 1.2,
+        ),
+        headlineLarge: TextStyle(
+          color: TetColors.luckyRedDark,
+          fontSize: 24,
+          fontWeight: FontWeight.w700,
+          height: 1.22,
         ),
         headlineMedium: TextStyle(
           color: TetColors.luckyRedDark,
-          fontWeight: FontWeight.bold,
+          fontSize: 20,
+          fontWeight: FontWeight.w700,
+          height: 1.25,
         ),
         titleLarge: TextStyle(
           color: TetColors.luckyRedDark,
+          fontSize: 18,
+          fontWeight: FontWeight.w700,
+          height: 1.25,
+        ),
+        titleMedium: TextStyle(
+          color: TetColors.luckyRedDark,
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
+          height: 1.3,
+        ),
+        titleSmall: TextStyle(
+          color: TetColors.luckyRedDark,
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+          height: 1.3,
+        ),
+        bodyLarge: TextStyle(
+          color: TetColors.darkRed,
+          fontSize: 16,
+          fontWeight: FontWeight.w500,
+          height: 1.45,
+        ),
+        bodyMedium: TextStyle(
+          color: TetColors.darkRed,
+          fontSize: 14,
+          fontWeight: FontWeight.w400,
+          height: 1.45,
+        ),
+        bodySmall: TextStyle(
+          color: TetColors.luckyRedDark,
+          fontSize: 12,
+          fontWeight: FontWeight.w400,
+          height: 1.35,
+        ),
+        labelLarge: TextStyle(
+          color: TetColors.luckyRedDark,
+          fontSize: 14,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.2,
+        ),
+        labelMedium: TextStyle(
+          color: TetColors.luckyRedDark,
+          fontSize: 12,
           fontWeight: FontWeight.w600,
         ),
-        bodyLarge: TextStyle(color: TetColors.darkRed),
-        bodyMedium: TextStyle(color: TetColors.darkRed),
+        labelSmall: TextStyle(
+          color: TetColors.luckyRedDark,
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+        ),
       ),
 
       // Divider Theme
@@ -214,6 +276,28 @@ class AppTheme {
         contentTextStyle: const TextStyle(color: TetColors.prosperityGoldLight),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         behavior: SnackBarBehavior.floating,
+      ),
+
+      dialogTheme: DialogThemeData(
+        titleTextStyle: const TextStyle(
+          color: TetColors.darkRed,
+          fontSize: 19,
+          fontWeight: FontWeight.w700,
+        ),
+        contentTextStyle: const TextStyle(
+          color: TetColors.luckyRedDark,
+          fontSize: 14,
+          height: 1.45,
+        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      ),
+
+      bottomSheetTheme: const BottomSheetThemeData(
+        backgroundColor: TetColors.warmWhite,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
       ),
     );
   }

@@ -4,6 +4,7 @@ class Contact {
   final String phone;
   final int relationshipType;
   final int greetingStatus;
+  final bool isPinned;
 
   Contact({
     this.id,
@@ -11,6 +12,7 @@ class Contact {
     required this.phone,
     required this.relationshipType,
     required this.greetingStatus,
+    this.isPinned = false,
   });
 
   Map<String, dynamic> toMap() {
@@ -20,6 +22,7 @@ class Contact {
       'phone': phone,
       'relationshipType': relationshipType,
       'greetingStatus': greetingStatus,
+      'isPinned': isPinned ? 1 : 0,
     };
   }
 
@@ -30,6 +33,7 @@ class Contact {
       phone: map['phone'],
       relationshipType: map['relationshipType'],
       greetingStatus: map['greetingStatus'],
+      isPinned: (map['isPinned'] ?? 0) == 1,
     );
   }
 }

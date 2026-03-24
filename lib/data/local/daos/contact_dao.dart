@@ -37,7 +37,10 @@ class ContactDao {
   Future<List<Contact>> getAllContacts() async {
     final db = await _dbHelper.database;
 
-    final result = await db.query('contacts');
+    final result = await db.query(
+      'contacts',
+      orderBy: 'isPinned DESC, name COLLATE NOCASE ASC',
+    );
 
     return result.map((e) => Contact.fromMap(e)).toList();
   }
@@ -52,6 +55,7 @@ class ContactDao {
       'contacts',
       where: 'relationshipType = ?',
       whereArgs: [relationshipType],
+      orderBy: 'isPinned DESC, name COLLATE NOCASE ASC',
     );
 
     return result.map((e) => Contact.fromMap(e)).toList();
@@ -80,6 +84,7 @@ class ContactDao {
       'contacts',
       where: conditions.isEmpty ? null : conditions.join(' AND '),
       whereArgs: args.isEmpty ? null : args,
+      orderBy: 'isPinned DESC, name COLLATE NOCASE ASC',
     );
 
     return result.map((e) => Contact.fromMap(e)).toList();
@@ -93,6 +98,7 @@ class ContactDao {
       'contacts',
       where: 'greetingStatus = ?',
       whereArgs: [greetingStatus],
+      orderBy: 'isPinned DESC, name COLLATE NOCASE ASC',
     );
 
     return result.map((e) => Contact.fromMap(e)).toList();
@@ -113,6 +119,27 @@ class ContactDao {
     );
   }
 
+  Future<void> updateGreetingStatusForMany({
+    required List<int> contactIds,
+    required int greetingStatus,
+  }) async {
+    if (contactIds.isEmpty) return;
+
+    final db = await _dbHelper.database;
+    final batch = db.batch();
+
+    for (final id in contactIds) {
+      batch.update(
+        'contacts',
+        {'greetingStatus': greetingStatus},
+        where: 'id = ?',
+        whereArgs: [id],
+      );
+    }
+
+    await batch.commit(noResult: true);
+  }
+
   Future<int> updateRelationshipType({
     required int contactId,
     required int relationshipType,
@@ -122,6 +149,20 @@ class ContactDao {
     return db.update(
       'contacts',
       {'relationshipType': relationshipType},
+      where: 'id = ?',
+      whereArgs: [contactId],
+    );
+  }
+
+  Future<int> updatePinnedStatus({
+    required int contactId,
+    required bool isPinned,
+  }) async {
+    final db = await _dbHelper.database;
+
+    return db.update(
+      'contacts',
+      {'isPinned': isPinned ? 1 : 0},
       where: 'id = ?',
       whereArgs: [contactId],
     );

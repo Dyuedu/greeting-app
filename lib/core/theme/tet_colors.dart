@@ -23,4 +23,15 @@ class TetColors {
   // Additional Tet colors
   static const Color darkRed = Color(0xFF8B0000);
   static const Color lightGold = Color(0xFFFFF9C4);
+
+  // Semantic status colors
+  static const Color statusPending = Color(0xFFFF8F00);
+  static const Color statusCalled = Color(0xFF2E7D32);
+  static const Color statusMessaged = Color(0xFF1565C0);
+  static const Color statusUnknown = Color(0xFF757575);
+
+  // Semantic action colors
+  static const Color actionEdit = Color(0xFF00796B);
+  static const Color actionDelete = Color(0xFFD32F2F);
+  static const Color selectionHighlight = Color(0xFFE65100);
 }
